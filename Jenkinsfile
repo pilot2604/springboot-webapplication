@@ -103,10 +103,20 @@ pipeline {
                 sh "docker run -d -p 6060:8080 $registry:$BUILD_NUMBER"
             }
         }
+
+        stage('Cleaning up') {
+            agent {
+                label 'docker'
+            }
+            steps{
+                sh "docker rmi $registry:$BUILD_NUMBER"
+            }
+        }
     }
+    
     post {
         success {
-            to: "khoi.luuhoang0@gmail.com",
+            emailext to: "khoi.luuhoang0@gmail.com",
             subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
             body: "Success Build"
         }

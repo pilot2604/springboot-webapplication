@@ -100,30 +100,21 @@ pipeline {
                 label 'docker'
             }
             steps {
-                sh "docker run -d -p 6060:8080 $registry:$BUILD_NUMBER"
-            }
-        }
-
-        stage('Cleaning up') {
-            agent {
-                label 'docker'
-            }
-            steps{
-                sh "docker rmi $registry:$BUILD_NUMBER"
+                sh "docker run -d -p 8080:8080 $registry:$BUILD_NUMBER"
             }
         }
     }
     
-    post {
-        success {
-            emailext to: "khoi.luuhoang0@gmail.com",
-            subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
-            body: "Success Build"
-        }
-        failure {
-            emailext to: "khoi.luuhoang0@gmail.com",
-            subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
-            body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}"
-        }
-    }
+    // post {
+    //     success {
+    //         emailext to: "khoi.luuhoang0@gmail.com",
+    //         subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
+    //         body: "Success Build"
+    //     }
+    //     failure {
+    //         emailext to: "khoi.luuhoang0@gmail.com",
+    //         subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
+    //         body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}"
+    //     }
+    // }
 }

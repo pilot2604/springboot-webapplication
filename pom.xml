@@ -24,7 +24,7 @@
         </dependency>
     </dependencies>
     <build>
-        <filename>webapp</filename>
+        <finalname>webapp</finalname>
         <plugins>
             <plugin>
               <groupId>org.sonatype.plugins</groupId>

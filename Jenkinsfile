@@ -4,39 +4,55 @@ pipeline {
     }
 
     tools {
-        maven "maven"
+        maven "maven3"
     }
 
     environment {
-        registry = "apryell/devops-repo"
-        registryCredential = "dockerhub-auth"
-        dockerImage = ''
+        SCANNER_HOME=tool 'sonar-scanner'
+
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "172.31.12.187:8081"
-        NEXUS_REPOSITORY = "docker-repo"
+        NEXUS_URL = "172.31.3.252:8081"
+        NEXUS_REPOSITORY = "devops101"
         NEXUS_CREDENTIAL_ID = "nexus-auth"
+
+        registry = "apryell/devops101"
+        registryCredential = "dockerhub-auth"
+        dockerImage = ''
     }
     
     stages {
-        stage('Checkout Code') {
+
+       stage ('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage ('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/pilot2604/springboot-webapplication.git'
             }
         }
         
-        stage('Build Package') {
+        stage ('Test Code') {
             steps {
-                sh "mvn clean package"
+                sh "mvn test"
+            }
+        }
+
+        stage ("SonarQube Analysis") {
+            steps {
+                withSonarQubeEnv(installationName: 'sonar-server', credentialsId: 'sonar-auth') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=WebApp \
+                                                           -Dsonar.projectKey=WebApp '''
+                }
             }
         }
         
-        stage("SonarQube analysis") {
+        stage ("Quality Gate") {
             steps {
                 script {
-                    withSonarQubeEnv(installationName: 'sonar10', credentialsId: 'sonar-auth') {
-                        sh 'mvn clean package sonar:sonar -Dsonar.projectKey=docker -Dsonar.projectName=docker'
-                    }
                     timeout(time: 10, unit: 'MINUTES') {
                         def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
@@ -46,8 +62,14 @@ pipeline {
                 }
             }
         }
+
+        stage ('Build Package') {
+            steps {
+                sh "mvn package -DskipTests"
+            }
+        }
         
-        stage("Publish to Nexus Repository Manager") {
+        stage ("Publish to Nexus Repository Manager") {
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml";
@@ -77,7 +99,7 @@ pipeline {
             }
         }
         
-        stage('Building Image') {
+        stage ('Building Image') {
             steps {
                 script {
                     dockerImage = docker.build registry + ":$BUILD_NUMBER"
@@ -85,7 +107,7 @@ pipeline {
             }
         }
         
-        stage('Upload Image to DockerHub') {
+        stage ('Upload Image to DockerHub') {
             steps {
                 script {
                     docker.withRegistry( '', registryCredential ) {
@@ -95,26 +117,13 @@ pipeline {
             }
         }
         
-        stage('Deploy Image on Jenkins Agent') {
+        stage ('Deploy Image on Jenkins Agent') {
             agent {
                 label 'docker'
             }
             steps {
-                sh "docker run -d -p 8080:8080 $registry:$BUILD_NUMBER"
+                sh "docker run -d -p 8088:8080 $registry:$BUILD_NUMBER"
             }
         }
     }
-    
-    // post {
-    //     success {
-    //         emailext to: "khoi.luuhoang0@gmail.com",
-    //         subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
-    //         body: "Success Build"
-    //     }
-    //     failure {
-    //         emailext to: "khoi.luuhoang0@gmail.com",
-    //         subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
-    //         body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}"
-    //     }
-    // }
 }

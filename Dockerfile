@@ -5,7 +5,7 @@ FROM tomcat:9
 RUN rm -rf /usr/local/tomcat/webapps/*
 
 # Copy the .war file to the Tomcat webapps directory
-COPY target/mavewebappdemo-1.0.0-SNAPSHOT.war /usr/local/tomcat/webapps/webapp.war
+COPY target/webapp.war /usr/local/tomcat/webapps/webapp.war
 
 # Start Tomcat when the container launches
 CMD ["catalina.sh", "run"]
